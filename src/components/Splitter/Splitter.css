@@ -1,0 +1,28 @@
+/*Основной элемент*/
+.main-splitter {
+  height: 300px !important; /*Высота 300px наивысший приоритет*/
+  background: transparent !important; /*Прозрачный фон наивысший приоритет*/
+  border-color: transparent !important; /*Прозрачный борт наивысший приоритет*/
+  padding-top: 3px;
+
+  flex: 1;
+  overflow: auto;
+}
+
+/*Каретка. Основной.*/
+.p-splitter-gutter {
+  background: transparent !important; /*Прозрачный фон наивысший приоритет*/
+  width: 10px !important;
+  padding-left: 3px !important;
+  padding-right: 3px !important;
+}
+.main-splitter {
+  width: 100%;
+  height: 100%;
+}
+
+.main-splitter .p-splitter-panel {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}

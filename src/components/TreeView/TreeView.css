@@ -1,0 +1,10 @@
+.p-tree-empty-message {
+  display: none !important;
+}
+.p-tree {
+  display: flex;
+}
+
+.p-tree-container {
+  flex: 1;
+}

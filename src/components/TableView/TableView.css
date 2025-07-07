@@ -1,0 +1,24 @@
+/*Класс таблицы*/
+.p-datatable-wrapper {
+  border-radius: 6px; /*Радиус в 6px*/
+}
+.p-datatable-emptymessage {
+  display: none !important;
+}
+.table-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.p-datatable {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.p-datatable-wrapper {
+  flex: 1;
+  overflow: auto;
+}
