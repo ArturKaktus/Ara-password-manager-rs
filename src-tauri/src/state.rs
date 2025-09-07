@@ -1,5 +1,6 @@
-use crate::modules::kakadu_file_module::PasswordData;
+use crate::modules::kakadu_file_module::{Group, PasswordData};
 use std::sync::Mutex;
+use tauri::{AppHandle, Emitter};
 
 /// Глобальное состояние приложения для хранения и управления данными паролей
 ///
@@ -13,17 +14,39 @@ pub struct AppState {
 }
 
 impl AppState {
-    /// Создает новое состояние приложения с пустыми данными
+    /// Создает новое состояние приложения с корневой группой
     pub fn new() -> Self {
         Self {
-            password_data: Mutex::new(None), // Инициализация пустым состоянием
+            password_data: Mutex::new(Some(PasswordData {
+                groups: vec![Self::create_root_group()],
+                records: Vec::new(),
+            })),
         }
     }
-}
 
-// Реализация трейта Default для удобного создания состояния
-impl Default for AppState {
-    fn default() -> Self {
-        Self::new()
+    /// Создает корневую группу
+    fn create_root_group() -> Group {
+        Group {
+            id: 0,
+            pid: 0,
+            name: "NewDatabase".to_string()
+        }
+    }
+
+    /// Очищает список групп, оставляя только корневую, и отправляет список на фронтенд
+    pub fn clear_group_list(&self, app: &tauri::AppHandle) -> Result<(), String> {
+        let mut password_data = self.password_data.lock()
+            .map_err(|e| format!("Ошибка блокировки Mutex: {}", e))?;
+
+        // Теперь мы уверены, что данные есть, так как инициализируются в new()
+        let data = password_data.as_mut().unwrap();
+        data.groups.clear();
+        data.groups.push(Self::create_root_group());
+
+        // Отправляем обновлённый список на фронтенд
+        app.emit("get_groups_listen", &data.groups)
+            .map_err(|e| format!("Ошибка отправки групп: {}", e))?;
+
+        Ok(())
     }
 }

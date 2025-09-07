@@ -7,6 +7,7 @@ import { listen } from "@tauri-apps/api/event";
 import { ContextMenu } from "primereact/contextmenu";
 import EditRecordDialog from "./dialogs/EditRecordDialog";
 import { invoke } from "@tauri-apps/api/core";
+import { Button } from "primereact/button";
 
 export default function TableViewComponent() {
   const [records, setRecords] = useState<Record[]>([]);
@@ -28,6 +29,7 @@ export default function TableViewComponent() {
   }, []);
 
   const handleEditClick = () => {
+    console.log("handleEditClick");
     setEditModalVisible(true);
   };
 
@@ -92,6 +94,28 @@ export default function TableViewComponent() {
 
   return (
     <>
+    <div className="flex gap-2 p-2">
+          <Button 
+            icon="pi pi-plus" 
+            style={{ borderRadius: '6px' }}
+            tooltip="Новый" 
+            tooltipOptions={{ position: 'bottom' }}
+          />
+          <Button 
+            icon="pi pi-pencil" 
+            style={{ borderRadius: '6px' }}
+            tooltip="Редактировать" 
+            tooltipOptions={{ position: 'bottom' }}
+            onClick={handleEditClick}
+          />
+          <Button 
+            icon="pi pi-trash" 
+            style={{ borderRadius: '6px' }}
+            tooltip="Удалить" 
+            tooltipOptions={{ position: 'bottom' }}
+            onClick={handleDeleteClick}
+          />
+        </div>
       <ContextMenu model={menuModel} ref={cm} />
 
       <EditRecordDialog
@@ -114,6 +138,7 @@ export default function TableViewComponent() {
           }) => handleContextMenu(e.originalEvent, e.data)}
           contextMenuSelection={selectedRecord}
           onContextMenuSelectionChange={(e) => setSelectedRecord(e.value)}
+          emptyMessage=" "
         >
           <Column field="name" header="Name"></Column>
           <Column field="login" header="Login"></Column>
