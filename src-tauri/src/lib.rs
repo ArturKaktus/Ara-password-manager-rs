@@ -24,6 +24,7 @@ pub fn run() {
             commands::file_commands::save_file,
             commands::file_commands::get_records_by_group,
             commands::file_commands::delete_record,
+            commands::file_commands::get_groups,
             modules::com_port::is_com_connected,
             modules::com_port::get_connected_port_name
         ])

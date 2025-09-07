@@ -1,4 +1,4 @@
-use crate::modules::kakadu_file_module::{KakaduProvider, Record};
+use crate::modules::kakadu_file_module::{KakaduProvider, Record, Group};
 use crate::state::AppState;
 use tauri::{AppHandle, Emitter};
 
@@ -118,4 +118,97 @@ pub async fn delete_record(
             .ok_or_else(|| "Запись с указанным ID не найдена".to_string()),
         None => Err("Данные не инициализированы".to_string()),
     }
+}
+
+#[tauri::command]
+pub async fn new_group(
+    group_id: u32,
+    group_name: String,
+    state: tauri::State<'_, AppState>,
+) -> Result<Group, String> {
+    let mut data = state.password_data.lock().unwrap();
+    match data.as_mut() {
+        Some(data) => {
+            // Объединяем ID групп и записей и находим максимальный
+            let new_id = data.groups
+                .iter()
+                .map(|g| g.id)
+                .chain(data.records.iter().map(|r| r.id))
+                .max()
+                .unwrap_or(0) + 1;
+
+            let new_group = Group {
+                id: new_id,
+                pid: group_id,
+                name: group_name,
+            };
+
+            data.groups.push(new_group.clone());
+            Ok(new_group)
+        },
+        None => Err("Данные не инициализированы".to_string()),
+    }
+}
+
+#[tauri::command]
+pub async fn edit_group(
+    group_id: u32,
+    new_name: String,
+    state: tauri::State<'_, AppState>,
+) -> Result<Group, String> {
+    let mut data = state.password_data.lock().unwrap();
+    match data.as_mut() {
+        Some(data) => {
+            data.groups
+                .iter_mut()
+                .find(|g| g.id == group_id)
+                .map(|group| {
+                    group.name = new_name.clone();
+                    group.clone()
+                })
+                .ok_or_else(|| "Группа с указанным ID не найдена".to_string())
+        },
+        None => Err("Данные не инициализированы".to_string()),
+    }
+}
+
+#[tauri::command]
+pub async fn delete_group(
+    group_id: u32,
+    state: tauri::State<'_, AppState>,
+) -> Result<u32, String> {
+    let mut data = state.password_data.lock().unwrap();
+    match data.as_mut() {
+        Some(data) => data
+            .groups
+            .iter()
+            .position(|g| g.id == group_id)
+            .map(|index| {
+                data.groups.remove(index);
+                group_id
+            })
+            .ok_or_else(|| "Группа с указанным ID не найдена".to_string()),
+        None => Err("Данные не инициализированы".to_string()),
+    }
+}
+
+#[tauri::command]
+pub async fn get_groups(
+    app: AppHandle,
+    state: tauri::State<'_, AppState>) -> Result<(), String>{
+    let data = state.password_data.lock().unwrap();
+
+    let groups = match &*data {
+        Some(data) => data
+            .groups
+            .iter()
+            .cloned()
+            .collect::<Vec<Group>>(),
+        None => return Err("Данные не загружены в систему".to_string()),
+    };
+
+    app.emit("get_groups_listen", &groups)
+        .map_err(|e| format!("Ошибка отправки записей: {}", e))?;
+
+    Ok(())
 }
