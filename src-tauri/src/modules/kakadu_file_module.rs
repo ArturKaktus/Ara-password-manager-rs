@@ -61,10 +61,7 @@ impl KakaduProvider {
     ///
     /// # Возвращает
     /// Result с PasswordData или ошибкой
-    pub fn open_file(&self, path: String) -> Result<PasswordData, Box<dyn Error>> {
-        // Временный хардкод пароля (в production должен заменяться реальным вводом)
-        let password = "123456789aA";
-
+    pub fn open_file(&self, path: &str, password: &str) -> Result<PasswordData, Box<dyn Error>> {
         // Чтение зашифрованных данных из файла
         let encrypted_data = fs::read(&path)?;
 
@@ -104,10 +101,7 @@ impl KakaduProvider {
     }
 
     /// Сохраняет данные паролей в зашифрованный файл
-    pub fn save_file(&self, path: String, data: &PasswordData) -> Result<(), Box<dyn Error>> {
-        // Временный хардкод пароля
-        let password = "123456789aA";
-
+    pub fn save_file(&self, path: String, password: &str, data: &PasswordData) -> Result<(), Box<dyn Error>> {
         // Сериализация в JSON
         let json_data = serde_json::to_vec(data)?;
 

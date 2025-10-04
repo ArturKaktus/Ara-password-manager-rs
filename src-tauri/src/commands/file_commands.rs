@@ -14,12 +14,13 @@ use tauri::{AppHandle, Emitter};
 #[tauri::command]
 pub async fn open_file(
     app: AppHandle,
-    path: String,
+    path: &str,
+    password: &str,
     state: tauri::State<'_, AppState>,
 ) -> Result<(), String> {
     let provider = KakaduProvider;
     println!("OPEN");
-    match provider.open_file(path) {
+    match provider.open_file(path, password) {
         Ok(data) => {
             // Блокируем и обновляем состояние атомарно
             *state.password_data.lock().unwrap() = Some(data.clone());
@@ -43,13 +44,13 @@ pub async fn open_file(
 /// # Ошибки
 /// Возвращает ошибку если: нет данных для сохранения или произошла ошибка записи
 #[tauri::command]
-pub async fn save_file(path: String, state: tauri::State<'_, AppState>) -> Result<(), String> {
+pub async fn save_file(path: String, password: &str, state: tauri::State<'_, AppState>) -> Result<(), String> {
     let provider = KakaduProvider;
     let data = state.password_data.lock().unwrap();
 
     match &*data {
         Some(data) => provider
-            .save_file(path, data)
+            .save_file(path,password, data)
             .map_err(|e| format!("Ошибка сохранения файла: {}", e)),
         None => Err("Отсутствуют данные для сохранения".to_string()),
     }
@@ -121,7 +122,7 @@ pub async fn delete_record(
 }
 
 #[tauri::command]
-pub async fn new_group(
+pub async fn new_group_command(
     group_id: u32,
     group_name: String,
     state: tauri::State<'_, AppState>,
@@ -137,14 +138,14 @@ pub async fn new_group(
                 .max()
                 .unwrap_or(0) + 1;
 
-            let new_group = Group {
+            let new_group_obj = Group {
                 id: new_id,
                 pid: group_id,
                 name: group_name,
             };
 
-            data.groups.push(new_group.clone());
-            Ok(new_group)
+            data.groups.push(new_group_obj.clone());
+            Ok(new_group_obj)
         },
         None => Err("Данные не инициализированы".to_string()),
     }
