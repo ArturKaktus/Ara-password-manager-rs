@@ -71,8 +71,8 @@ export function TreeViewComponent() {
     console.log("Выбрана группа: ", selectedKey)
     // Отправляем ID выбранной группы в Rust backend
     invoke("get_records_by_group", {groupId: +selectedKey})
-        .then(() => console.log("Group ID sent successfully"))
-        .catch((err) => console.error("Error sending group ID:", err));
+        .then(() => console.log("Загрузка записи от Id группы успешна"))
+        .catch((err) => console.error("Ошибка get_records_by_group:", err));
   };
 
   useEffect(() => {
