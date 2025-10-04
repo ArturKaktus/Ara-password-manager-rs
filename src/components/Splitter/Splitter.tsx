@@ -1,6 +1,6 @@
 import "./Splitter.css";
 import { Splitter, SplitterPanel } from "primereact/splitter";
-import TreeViewComponent from "../TreeView/TreeView";
+import {TreeViewComponent} from "../TreeView/TreeView";
 import TableViewComponent from "../TableView/TableView";
 
 
