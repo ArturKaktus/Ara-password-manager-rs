@@ -123,7 +123,8 @@ pub async fn delete_record(
 
 #[tauri::command]
 pub async fn new_group_command(
-    group_id: u32,
+    app: AppHandle,
+    parent_group_id: u32,
     group_name: String,
     state: tauri::State<'_, AppState>,
 ) -> Result<Group, String> {
@@ -140,11 +141,14 @@ pub async fn new_group_command(
 
             let new_group_obj = Group {
                 id: new_id,
-                pid: group_id,
+                pid: parent_group_id,
                 name: group_name,
             };
 
             data.groups.push(new_group_obj.clone());
+            // Отправка групп через Tauri-событие на фронтенд
+            app.emit("get_groups_listen", &data.groups)
+                .map_err(|e| format!("Ошибка отправки групп: {}", e))?;
             Ok(new_group_obj)
         },
         None => Err("Данные не инициализированы".to_string()),
