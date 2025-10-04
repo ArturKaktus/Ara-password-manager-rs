@@ -1,11 +1,10 @@
-import { SyntheticEvent, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { Tree, TreeEventNodeEvent } from "primereact/tree";
 import "./TreeView.css";
 import { Group } from "../Models/Kakadu/GroupModel";
 import { invoke } from "@tauri-apps/api/core";
 import { ContextMenu } from "primereact/contextmenu";
-import { Button } from "primereact/button";
 import NewGroupDialog from "./dialogs/NewGroupDialog";
 
 interface GroupTreeNode {
@@ -15,7 +14,7 @@ interface GroupTreeNode {
   children?: GroupTreeNode[];
 }
 
-export default function TreeViewComponent() {
+export function TreeViewComponent() {
   const [nodes, setNodes] = useState<GroupTreeNode[]>([]);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [contextMenuNodeKey, setContextMenuNodeKey] = useState<string | null>(null);
@@ -71,33 +70,33 @@ export default function TreeViewComponent() {
     setSelectedKey(selectedKey);
     console.log("Выбрана группа: ", selectedKey)
     // Отправляем ID выбранной группы в Rust backend
-    invoke("get_records_by_group", { groupId: +selectedKey })
-      .then(() => console.log("Group ID sent successfully"))
-      .catch((err) => console.error("Error sending group ID:", err));
+    invoke("get_records_by_group", {groupId: +selectedKey})
+        .then(() => console.log("Загрузка записи от Id группы успешна"))
+        .catch((err) => console.error("Ошибка get_records_by_group:", err));
   };
 
   useEffect(() => {
-  const setup = async () => {
-    // 1. Сначала подписываемся на событие
-    const unlisten = await listen<Group[]>("get_groups_listen", (event) => {
-      const newTree = event.payload?.length > 0 
-        ? buildTreeFromGroups(event.payload) 
-        : [];
-      setNodes(newTree);
-    });
+    const setup = async () => {
+      // 1. Сначала подписываемся на событие
+      const unlisten = await listen<Group[]>("get_groups_listen", (event) => {
+        const newTree = event.payload?.length > 0
+            ? buildTreeFromGroups(event.payload)
+            : [];
+        setNodes(newTree);
+      });
 
-    // 2. Затем запрашиваем данные
-    await invoke("get_groups").catch(err => console.error("Ошибка загрузки групп:", err));
+      // 2. Затем запрашиваем данные
+      await invoke("get_groups").catch(err => console.error("Ошибка загрузки групп:", err));
 
-    return unlisten;
-  };
+      return unlisten;
+    };
 
-  const cleanupPromise = setup();
+    const cleanupPromise = setup();
 
-  return () => {
-    cleanupPromise.then(unlisten => unlisten());
-  };
-}, []);
+    return () => {
+      cleanupPromise.then(unlisten => unlisten());
+    };
+  }, []);
   const menuModel = [
     {
       label: "Создать",
@@ -143,68 +142,72 @@ export default function TreeViewComponent() {
 
   const handleSaveGroup = (name: string) => {
     if (!name.trim()) {
-    console.warn("Group name cannot be empty");
-    return;
-  }
+      console.warn("Group name cannot be empty");
+      return;
+    }
+    if (selectedKey == null) {
+      console.warn("Не выбрана группа. selectedKey == null.")
+    }
 
-  // 1. Находим максимальный ID среди всех групп
-  const findAllIds = (nodes: GroupTreeNode[]): number[] => {
-    let ids: number[] = [];
-    nodes.forEach(node => {
-      const id = parseInt(node.key);
-      if (!isNaN(id)) {
-        ids.push(id);
-      }
-      if (node.children) {
-        ids = [...ids, ...findAllIds(node.children)];
-      }
-    });
-    return ids;
-  };
+    // @ts-ignore
+    invoke("new_group_command", {parentGroupId: +selectedKey, groupName: name})
+        .then(() => console.log("Группа создалась."))
+        .catch((err) => console.error("Ошибка создании группы:", err));
+    // 1. Находим максимальный ID среди всех групп
+    // const findAllIds = (nodes: GroupTreeNode[]): number[] => {
+    //   let ids: number[] = [];
+    //   nodes.forEach(node => {
+    //     const id = parseInt(node.key);
+    //     if (!isNaN(id)) {
+    //       ids.push(id);
+    //     }
+    //     if (node.children) {
+    //       ids = [...ids, ...findAllIds(node.children)];
+    //     }
+    //   });
+    //   return ids;
+    // };
 
-  const allIds = findAllIds(nodes);
-  const maxId = allIds.length > 0 ? Math.max(...allIds) : 0;
-  const newId = maxId + 1;
+    // const allIds = findAllIds(nodes);
+    // const maxId = allIds.length > 0 ? Math.max(...allIds) : 0;
+    // const newId = maxId + 1;
 
-  // 2. Создаем новую группу
-  const newGroup: GroupTreeNode = {
-    key: newId.toString(),
-    label: name,
-    icon: "pi pi-folder",
-    children: []
-  };
+    // // 2. Создаем новую группу
+    // const newGroup: GroupTreeNode = {
+    //   key: newId.toString(),
+    //   label: name,
+    //   icon: "pi pi-folder",
+    //   children: []
+    // };
 
-  // 3. Определяем parentKey (выбранная группа или корень "0")
-  const parentKey = selectedKey || "0";
-
-  // 4. Добавляем новую группу к выбранному родителю
-  const addNodeToTree = (nodes: GroupTreeNode[]): GroupTreeNode[] => {
-    return nodes.map(node => {
-      if (node.key === parentKey) {
-        return {
-          ...node,
-          children: [...(node.children || []), newGroup]
-        };
-      }
-      
-      if (node.children) {
-        return {
-          ...node,
-          children: addNodeToTree(node.children)
-        };
-      }
-      
-      return node;
-    });
-  };
-
-  // 5. Обновляем состояние
-  setNodes(prevNodes => addNodeToTree(prevNodes));
-  setNewGroupDialog(false);
+    // // 4. Добавляем новую группу к выбранному родителю
+    // const addNodeToTree = (nodes: GroupTreeNode[]): GroupTreeNode[] => {
+    //   return nodes.map(node => {
+    //     if (node.key === parentKey) {
+    //       return {
+    //         ...node,
+    //         children: [...(node.children || []), newGroup]
+    //       };
+    //     }
+    //
+    //     if (node.children) {
+    //       return {
+    //         ...node,
+    //         children: addNodeToTree(node.children)
+    //       };
+    //     }
+    //
+    //     return node;
+    //   });
+    // };
+    //
+    // // 5. Обновляем состояние
+    // setNodes(prevNodes => addNodeToTree(prevNodes));
+    // setNewGroupDialog(false);
   }
   return (
-    <>
-      {/* <div className="flex gap-2 p-2">
+      <>
+        {/* <div className="flex gap-2 p-2">
         <Button 
           icon="pi pi-plus" 
           style={{ borderRadius: '6px' }}
@@ -228,27 +231,27 @@ export default function TreeViewComponent() {
           tooltipOptions={{ position: 'bottom' }}
         />
       </div> */}
-      
-      <NewGroupDialog
-        visible={newGroupDialog}
-        onHide={()=> setNewGroupDialog(false)}
-        group={{name: ""}}
-        onSave={handleSaveGroup}
-      />
-      <ContextMenu model={menuModel} ref={cm} />
-      <Tree
-        value={nodes}
-        selectionMode="single"
-        selectionKeys={selectedKey ? { [selectedKey]: true } : {}}
-        onSelectionChange={(e) => handleNodeSelect(e)}
-        className="w-full h-full"
-        onContextMenu={(e) => handleContextMenu(e)}
-        style={{
-          minWidth: "100%",
-          width: "100%",
-          padding: 0,
-        }}
-      />
-    </>
+
+        <NewGroupDialog
+            visible={newGroupDialog}
+            onHide={() => setNewGroupDialog(false)}
+            group={{name: ""}}
+            onSave={handleSaveGroup}
+        />
+        <ContextMenu model={menuModel} ref={cm}/>
+        <Tree
+            value={nodes}
+            selectionMode="single"
+            selectionKeys={selectedKey ? {[selectedKey]: true} : {}}
+            onSelectionChange={(e) => handleNodeSelect(e)}
+            className="w-full h-full"
+            onContextMenu={(e) => handleContextMenu(e)}
+            style={{
+              minWidth: "100%",
+              width: "100%",
+              padding: 0,
+            }}
+        />
+      </>
   );
 }
