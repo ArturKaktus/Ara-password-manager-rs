@@ -121,6 +121,8 @@ pub async fn delete_record(
     }
 }
 
+
+//Test comment
 #[tauri::command]
 pub async fn new_group_command(
     app: AppHandle,
