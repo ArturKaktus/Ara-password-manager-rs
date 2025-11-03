@@ -27,7 +27,7 @@ impl AppState {
     /// Создает корневую группу
     fn create_root_group() -> Group {
         Group {
-            id: 0,
+            id: 1,
             pid: 0,
             name: "NewDatabase".to_string()
         }

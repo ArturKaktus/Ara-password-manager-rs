@@ -137,7 +137,6 @@ pub async fn new_group_command(
             let new_id = data.groups
                 .iter()
                 .map(|g| g.id)
-                .chain(data.records.iter().map(|r| r.id))
                 .max()
                 .unwrap_or(0) + 1;
 
