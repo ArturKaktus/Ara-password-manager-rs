@@ -1,6 +1,7 @@
-use crate::modules::kakadu_file_module::{KakaduProvider, Record, Group};
+use crate::modules::kakadu_file_module::{KakaduProvider, PasswordData, Record, Group};
 use crate::state::AppState;
-use tauri::{AppHandle, Emitter};
+use crate::utils::emit_event;
+use tauri::{AppHandle, Manager};
 
 /// Открывает и парсит файл с данными, сохраняет в состоянии и отправляет группы на фронтенд
 ///
@@ -26,8 +27,7 @@ pub async fn open_file(
             *state.password_data.lock().unwrap() = Some(data.clone());
 
             // Отправка групп через Tauri-событие на фронтенд
-            app.emit("get_groups_listen", &data.groups)
-                .map_err(|e| format!("Ошибка отправки групп: {}", e))?;
+            emit_event(&app, "get_groups_listen", &data.groups, "Ошибка отправки групп")?;
 
             Ok(())
         }
@@ -44,14 +44,17 @@ pub async fn open_file(
 /// # Ошибки
 /// Возвращает ошибку если: нет данных для сохранения или произошла ошибка записи
 #[tauri::command]
-pub async fn save_file(path: String, password: &str, state: tauri::State<'_, AppState>) -> Result<(), String> {
+pub async fn save_file(app: AppHandle, path: String, password: &str, state: tauri::State<'_, AppState>) -> Result<(), String> {
     let provider = KakaduProvider;
     let data = state.password_data.lock().unwrap();
 
     match &*data {
-        Some(data) => provider
-            .save_file(path,password, data)
-            .map_err(|e| format!("Ошибка сохранения файла: {}", e)),
+        Some(data) => {
+            let res = provider
+                .save_file(path.clone(), password, data)
+                .map_err(|e| format!("Ошибка сохранения файла: {}", e));
+            res
+        },
         None => Err("Отсутствуют данные для сохранения".to_string()),
     }
 }
@@ -83,8 +86,7 @@ pub async fn get_records_by_group(
         None => return Err("Данные не загружены в систему".to_string()),
     };
 
-    app.emit("get_records_listen", &records)
-        .map_err(|e| format!("Ошибка отправки записей: {}", e))?;
+    emit_event(&app, "get_records_listen", &records, "Ошибка отправки записей")?;
 
     Ok(())
 }
@@ -148,8 +150,7 @@ pub async fn new_group_command(
 
             data.groups.push(new_group_obj.clone());
             // Отправка групп через Tauri-событие на фронтенд
-            app.emit("get_groups_listen", &data.groups)
-                .map_err(|e| format!("Ошибка отправки групп: {}", e))?;
+            emit_event(&app, "get_groups_listen", &data.groups, "Ошибка отправки групп")?;
             Ok(new_group_obj)
         },
         None => Err("Данные не инициализированы".to_string()),
@@ -213,8 +214,39 @@ pub async fn get_groups(
         None => return Err("Данные не загружены в систему".to_string()),
     };
 
-    app.emit("get_groups_listen", &groups)
-        .map_err(|e| format!("Ошибка отправки записей: {}", e))?;
+    emit_event(&app, "get_groups_listen", &groups, "Ошибка отправки записей")?;
 
+    Ok(())
+}
+
+/// Создает новую пустую базу данных в состоянии и отправляет группы на фронтенд
+/// Очищает `records` и оставляет одну корневую группу `NewDatabase`
+#[tauri::command]
+pub async fn new_file(
+    app: AppHandle,
+    state: tauri::State<'_, AppState>,
+) -> Result<(), String> {
+    let mut data_guard = state
+        .password_data
+        .lock()
+        .map_err(|e| format!("Ошибка блокировки Mutex: {}", e))?;
+
+    *data_guard = Some(PasswordData {
+        groups: vec![Group {
+            id: 1,
+            pid: 0,
+            name: "NewDatabase".to_string(),
+        }],
+        records: Vec::new(),
+    });
+
+    // Безопасно брать ссылку после установки значения
+    let groups = &data_guard.as_ref().unwrap().groups;
+
+    emit_event(&app, "get_groups_listen", groups, "Ошибка отправки групп")?;
+
+    // Также сбрасываем список записей на фронтенде (пустой список)
+    let empty_records: Vec<Record> = Vec::new();
+    emit_event(&app, "get_records_listen", &empty_records, "Ошибка отправки записей")?;
     Ok(())
 }
