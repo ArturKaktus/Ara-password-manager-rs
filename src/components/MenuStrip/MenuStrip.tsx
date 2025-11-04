@@ -5,6 +5,7 @@ import { PrimeIcons } from "primereact/api";
 import { invoke } from "@tauri-apps/api/core";
 import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
 
+import { handleNew } from "./handlers/HandleNew";
 import { handleExit } from "./handlers/HandleExit";
 import { handleOpen } from "./handlers/HandleOpen";
 import { handleSave } from "./handlers/HandleSave";
@@ -69,6 +70,7 @@ export default function MenuStripComponent() {
         {
           label: "Новый",
           icon: PrimeIcons.PLUS,
+          command: () => handleNew()
         },
         {
           label: "Открыть",

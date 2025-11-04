@@ -1,6 +1,7 @@
 use crate::modules::kakadu_file_module::{Group, PasswordData};
+use crate::utils::emit_event;
 use std::sync::Mutex;
-use tauri::{AppHandle, Emitter};
+use tauri::AppHandle;
 
 /// Глобальное состояние приложения для хранения и управления данными паролей
 ///
@@ -44,8 +45,7 @@ impl AppState {
         data.groups.push(Self::create_root_group());
 
         // Отправляем обновлённый список на фронтенд
-        app.emit("get_groups_listen", &data.groups)
-            .map_err(|e| format!("Ошибка отправки групп: {}", e))?;
+        emit_event(&app, "get_groups_listen", &data.groups, "Ошибка отправки групп")?;
 
         Ok(())
     }

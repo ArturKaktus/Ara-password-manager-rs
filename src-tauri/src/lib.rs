@@ -1,6 +1,7 @@
 mod commands;
 pub mod modules;
 mod state;
+mod utils;
 
 use modules::com_port::ComPortState;
 use state::AppState;
@@ -26,6 +27,7 @@ pub fn run() {
             commands::file_commands::delete_record,
             commands::file_commands::get_groups,
             commands::file_commands::new_group_command,
+            commands::file_commands::new_file,
             modules::com_port::is_com_connected,
             modules::com_port::get_connected_port_name
         ])
